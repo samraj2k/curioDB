@@ -35,6 +35,8 @@ add_executable(curiodb main.cpp
         src/io/io.cpp
         headers/io/bgwriter.h
         src/io/bgwriter.cpp
+        headers/utils/relation.h
+        headers/curio.h
 )
 
 target_link_libraries(curiodb gtest gtest_main spdlog::spdlog)
