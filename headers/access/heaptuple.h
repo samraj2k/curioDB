@@ -14,5 +14,7 @@ struct HeapTupleHeaderData {
     // in the disk, where this heap tuple is, basically the ctid
     ItemPointerData itemPointerData;
 
+    // Main data after this
+    // Kept it simple, excluded number of attributes, null bits etc for KV impl
 };
 #endif //HEAPTUPLE_H

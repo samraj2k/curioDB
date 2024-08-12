@@ -36,6 +36,9 @@ struct PageHeaderData {
     Offset freeSpaceStart;
     Offset freeSpaceEnd;
     Offset specialDataSpace;
+    /**
+     * Points to item (see item.h)
+     */
     ItemIdData itemIds[];
 };
 using PageHeader = PageHeaderData*;
