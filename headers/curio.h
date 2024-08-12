@@ -5,6 +5,8 @@
 #ifndef CURIO_H
 #define CURIO_H
 
-using ID = unsigned long long int;
+#include <cstdint>
 
+using ID = unsigned long long int;
+using Offset = std::uint16_t;
 #endif //CURIO_H

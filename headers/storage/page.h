@@ -2,25 +2,40 @@
 #define PAGE_H
 
 #include <cstdint>
+#include "curio.h"
 #include "item.h"
 #include "configs/constants.h"
 
 // A page is a block of memory that is used to store data
 // Suppose it is 8 KB, so a char pointer having 1024 * 8 bytes
-
-using PageOffset = std::uint16_t;
-
 using Page = char*;
 
-struct ItemIdData {
-    PageOffset dataOffset;;  // offset to tuple (from start of page)
-    ItemSize dataLength;  // byte length of tuple
-};
+/**
+Using slotted page structure
+
++----------------+---------------------------------+
+| PageHeaderData | itemId0 itemId1 itemId2 ...     |
++-----------+----+---------------------------------+
+| ... itemIdN |									   |
++-----------+--------------------------------------+
+|		     ^ freeSpaceStart					   |
+|												   |
+|			 v freeSpaceEnd						   |
++-------------+------------------------------------+
+|			 | ItemN ...                           |
++-------------+------------------+-----------------+
+|	   ... Item2 Item1 Item0 | specialDataSpace    |
++--------------------------------+-----------------+
+ItemIds are also part of header
+Item are essentially tuples, either: HeapTuple, BtreeTuple or any index
+Essentially they are item (Pointer), but Buffer does not care about this.
+In they access layer, Item pointer will be parsed as per the index/heap tuple
+**/
 
 struct PageHeaderData {
-    PageOffset freeSpaceStart;
-    PageOffset freeSpaceEnd;
-    PageOffset specialDataSpace;
+    Offset freeSpaceStart;
+    Offset freeSpaceEnd;
+    Offset specialDataSpace;
     ItemIdData itemIds[];
 };
 using PageHeader = PageHeaderData*;
