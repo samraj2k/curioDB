@@ -9,6 +9,8 @@
 #include <vector>
 #include <cassert>
 
+#include "utils/relation.h"
+
 static BufferMap bufferMap;
 static BufferDescriptors bufferDescriptors(BUFFER_SLOTS);
 static std::vector<Page> bufferPool(BUFFER_SLOTS);
@@ -29,7 +31,7 @@ namespace buffer {
     void dirtyBufferFlushIO(BufferDescriptor* bufferDescriptor) {
         io::writePageToDisk(bufferPool[victimBuffer],
                         bufferDescriptors[victimBuffer]->tag.blockNumber,
-                        bufferDescriptors[victimBuffer]->tag.fileNumber);
+                        bufferDescriptors[victimBuffer]->tag.relationId);
         bufferDescriptor->isDirty.store(false);
     }
 
@@ -67,7 +69,7 @@ namespace buffer {
     bool bufferLoadIO(const BufferDescriptor* bufferDesc) {
         assert(bufferDesc->contentLock.isWriteLocked.load());
         BufferTag tag = bufferDesc->tag;
-        Page page = io::loadPageFromDisk(tag.blockNumber, tag.fileNumber);
+        Page page = io::loadPageFromDisk(tag.blockNumber, tag.relationId);
         if(page == nullptr) {
             return false;
         }
@@ -95,6 +97,13 @@ namespace buffer {
         };
         bufferMap[tag] = evictedBuffer;
         return bufferDescriptors[evictedBuffer];
+    }
+
+    BufferId readBuffer(Relation relation, BlockNumber blockNumber) {
+        BufferTag bufferTag{};
+        bufferTag.blockNumber = blockNumber;
+        bufferTag.relationId = relation->relationId;
+        return readBuffer(bufferTag);
     }
 
     BufferId readBuffer(const BufferTag &tag) {
@@ -147,6 +156,36 @@ namespace buffer {
         BufferDescriptor* bufferDesc = bufferDescriptors[bufferId];
         unpin(bufferDesc);
     }
+
+    void lockBuffer(const BufferId bufferId, const LockMode lockMode) {
+        BufferDescriptor* bufferDescriptor = bufferDescriptors[bufferId];
+        switch (lockMode) {
+            case LockMode::READ:
+                bufferDescriptor->contentLock.getReadLock();
+            break;
+            case LockMode::WRITE:
+                bufferDescriptor->contentLock.getWriteLock();
+            break;
+            default:
+                throw std::invalid_argument("Invalid lock mode");
+        }
+    }
+
+    void unlocklockBuffer(const BufferId bufferId, const LockMode lockMode) {
+        BufferDescriptor* bufferDescriptor = bufferDescriptors[bufferId];
+        switch (lockMode) {
+            case LockMode::READ:
+                bufferDescriptor->contentLock.releaseReadLock();
+            break;
+            case LockMode::WRITE:
+                bufferDescriptor->contentLock.releaseWriteLock();
+            break;
+            default:
+                throw std::invalid_argument("Invalid lock mode");
+        }
+    }
+
+
 
 }
 

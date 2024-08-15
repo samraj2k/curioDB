@@ -5,6 +5,7 @@
 #ifndef HEAPTUPLE_H
 #define HEAPTUPLE_H
 #include "curio.h"
+#include "configs/constants.h"
 #include "storage/item.h"
 
 /**
@@ -43,4 +44,21 @@ struct HeapTupleHeaderData {
 
     // Main data after this, ignored fields for null bitmap etc for reduced complexity in this project
 };
+
+// In memory data structure
+struct HeapTupleData {
+    uint16_t		dataLength;
+    ItemPointerData t_self;
+    ID tableId;
+    // Here the header
+    HeapTupleHeaderData* t_data;
+};
+using HeapTuple = HeapTupleData*;
+
+namespace heap {
+    inline ObjectSize sizeOfHeapTupleHeader() {
+        return sizeof(HeapTupleHeaderData);
+    }
+}
+
 #endif //HEAPTUPLE_H

@@ -58,7 +58,7 @@ namespace page {
         return (header->freeSpaceStart - sizeOfHeader()) / sizeof(ItemIdData);
     }
 
-    inline uint16_t getEmptySpace(Page page) {
+    inline ObjectSize getEmptySpace(Page page) {
         auto header = (PageHeader)page;
         return header->freeSpaceEnd - header->freeSpaceStart;
     }

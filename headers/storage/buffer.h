@@ -10,22 +10,24 @@
 
 #include "configs/constants.h"
 #include "block.h"
+#include "page.h"
 #include "lock/lock.h"
+#include "utils/relation.h"
 
 using BufferId = unsigned int;
 // 128 MB for 8KB buffer
 
 struct BufferTag {
     BlockNumber blockNumber;
-    uint64_t fileNumber;
+    ID relationId;
 
     bool operator==(const BufferTag& other) const {
-        return blockNumber == other.blockNumber && fileNumber == other.fileNumber;
+        return blockNumber == other.blockNumber && relationId == other.relationId;
     }
 
     struct Hash {
         std::size_t operator()(const BufferTag& tag) const {
-            std::string combined = std::to_string(tag.blockNumber) + "#" + std::to_string(tag.fileNumber);
+            std::string combined = std::to_string(tag.blockNumber) + "#" + std::to_string(tag.relationId);
             return std::hash<std::string>{}(combined);
         }
     };
@@ -51,8 +53,12 @@ using BufferDescriptors = std::vector<BufferDescriptor*>;
 namespace buffer {
 
     void initBuffer();
+    BufferId readBuffer(Relation relation, BlockNumber blockNumber);
     BufferId readBuffer(const BufferTag &tag);
     void releaseBuffer(BufferId bufferId);
+    ObjectSize getEmptySpace(BufferId bufferId);
+    void lockBuffer(BufferId bufferId, LockMode lockMode);
+    void unlockBuffer(BufferId bufferId, LockMode lockMode);
 
     inline void pin(BufferDescriptor* bufferDesc) {
         bufferDesc->pinCount.store(bufferDesc->pinCount.load() + 1, std::memory_order_relaxed);

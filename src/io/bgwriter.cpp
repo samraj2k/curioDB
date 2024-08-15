@@ -35,14 +35,14 @@ namespace io {
                     try {
                         io::writePageToDisk(bufferPool[currentBuffer],
                             bufferDesc->tag.blockNumber,
-                            bufferDesc->tag.fileNumber);
+                            bufferDesc->tag.relationId);
 
                         bufferDesc->isDirty.store(false);
 
                     } catch (const std::exception& e) {
                         spdlog::error("Error writing page to disk for block {} in file {}: {}",
                                       bufferDesc->tag.blockNumber,
-                                      bufferDesc->tag.fileNumber,
+                                      bufferDesc->tag.relationId,
                                       e.what());
                     }
                     ++flushedPages;

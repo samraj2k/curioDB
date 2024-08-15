@@ -7,6 +7,11 @@
 #include <condition_variable>
 
 
+enum struct LockMode {
+    READ,
+    WRITE
+};
+
 struct ReadWriteLock {
     std::mutex mtx;
     int waitingWritersCount{0};
