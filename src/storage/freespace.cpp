@@ -4,39 +4,65 @@
 
 #include "storage/freespace.h"
 
+#include <assert.h>
 #include <map>
-#include <mutex>
 
 #include "io/io.h"
+#include "storage/buffer.h"
 #include "utils/relation.h"
 
 static std::mutex mtx;
 static std::map<ID, std::map<BlockNumber, ObjectSize>> freeSpaceMap;
 
-
-void initFreeSpaceMap(Relation relation) {
-    std::unique_lock lck(mtx);
-
-    Page lastBlockPage = io::loadPageFromDisk(io::getLastBlockForFile(relation->relationId), relation->relationId);
-    ObjectSize emptySpace = page::getEmptySpace(lastBlockPage);
-    freeSpaceMap[relation->relationId][io::getLastBlockForFile(relation->relationId)] = emptySpace;
-}
-
-BlockNumber getFreeBlock(Relation relation, ObjectSize size) {
-    std::unique_lock lck(mtx);
-    if(!freeSpaceMap.contains(relation->relationId)) {
-        initFreeSpaceMap(relation);
+namespace freespace {
+    void initFreeSpaceMap(Relation relation) {
+        std::unique_lock lck(mtx);
+        const BlockNumber lastBlock = io::getLastBlockForFile(relation->relationId);
+        const BufferId bufferId = buffer::readBuffer(relation, lastBlock);
+        Page page = buffer::getPage(bufferId);
+        const ObjectSize emptySpace = page::getEmptySpace(page);
+        freeSpaceMap[relation->relationId][io::getLastBlockForFile(relation->relationId)] = emptySpace;
+        buffer::releaseBuffer(bufferId);
     }
-    auto relFreeSpaceMap = freeSpaceMap[relation->relationId];
 
-    for(auto to: relFreeSpaceMap) {
-        if(to.second >= size) {
-            return to.first;
+    BlockNumber getFreeBlock(Relation relation, ObjectSize size) {
+        std::unique_lock lck(mtx);
+        if(!freeSpaceMap.contains(relation->relationId)) {
+            initFreeSpaceMap(relation);
         }
-    }
-    return -1;
+        auto relFreeSpaceMap = freeSpaceMap[relation->relationId];
 
+        for(auto to: relFreeSpaceMap) {
+            if(to.second >= size) {
+                return to.first;
+            }
+        }
+        return -1;
+    }
+
+    BlockNumber recordFreeSpaceAndGetPage(Relation relation,
+                                            const BlockNumber blockNumber,
+                                            const ObjectSize oldSpace,
+                                            const ObjectSize requiredSize) {
+        std::unique_lock lck(mtx);
+        assert(freeSpaceMap.contains(relation->relationId));
+        auto relFreeSpaceMap = freeSpaceMap[relation->relationId];
+        if(relFreeSpaceMap.contains(blockNumber)) {
+            relFreeSpaceMap[blockNumber] = std::min(relFreeSpaceMap[blockNumber], oldSpace);
+        }
+        lck.unlock();
+        return getFreeBlock(relation, requiredSize);
+    }
+
+    BufferId addBlockInRelation(Relation relation) {
+        std::unique_lock lck(mtx);
+        assert(freeSpaceMap.contains(relation->relationId));
+
+
+    }
 }
+
+
 
 
 

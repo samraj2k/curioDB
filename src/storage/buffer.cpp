@@ -171,7 +171,7 @@ namespace buffer {
         }
     }
 
-    void unlocklockBuffer(const BufferId bufferId, const LockMode lockMode) {
+    void unlockBuffer(const BufferId bufferId, const LockMode lockMode) {
         BufferDescriptor* bufferDescriptor = bufferDescriptors[bufferId];
         switch (lockMode) {
             case LockMode::READ:
@@ -185,7 +185,9 @@ namespace buffer {
         }
     }
 
-
+    Page getPage(const BufferId buffer) {
+        return bufferPool[buffer];
+    }
 
 }
 

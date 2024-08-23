@@ -56,9 +56,9 @@ namespace buffer {
     BufferId readBuffer(Relation relation, BlockNumber blockNumber);
     BufferId readBuffer(const BufferTag &tag);
     void releaseBuffer(BufferId bufferId);
-    ObjectSize getEmptySpace(BufferId bufferId);
     void lockBuffer(BufferId bufferId, LockMode lockMode);
     void unlockBuffer(BufferId bufferId, LockMode lockMode);
+    Page getPage(BufferId buffer);
 
     inline void pin(BufferDescriptor* bufferDesc) {
         bufferDesc->pinCount.store(bufferDesc->pinCount.load() + 1, std::memory_order_relaxed);
