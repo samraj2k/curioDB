@@ -2,54 +2,74 @@
 #define PAGE_H
 
 #include <cstdint>
-#include <vector>
+#include "curio.h"
 #include "item.h"
+#include "configs/constants.h"
 
-namespace Page {
-    // A page is a block of memory that is used to store data
-    // Suppose it is 8 KB, so a char pointer having 1024 * 8 bytes
-    using PageNumber = std::uint32_t;
-    using PageOffset = std::uint16_t;
-    using TupleLength = std::uint16_t;
+// A page is a block of memory that is used to store data
+// Suppose it is 8 KB, so a char pointer having 1024 * 8 bytes
+using Page = char*;
 
-    using Page = char*;
+/**
+Using slotted page structure
 
-    const size_t PAGE_SIZE = 1024 * 8;
++----------------+---------------------------------+
+| PageHeaderData | itemId0 itemId1 itemId2 ...     |
++-----------+----+---------------------------------+
+| ... itemIdN |                                    |
++-----------+--------------------------------------+
+|		     ^ freeSpaceStart                      |
+|                                                  |
+|			 v freeSpaceEnd                        |
++-------------+------------------------------------+
+|			 | ItemN ...                           |
++-------------+------------------+-----------------+
+|	   ... Item2 Item1 Item0 | specialDataSpace    |
++--------------------------------+-----------------+
+ItemIds are also part of header
+Item are essentially tuples, either: HeapTuple, BtreeTuple or any index
+Essentially they are item (Pointer), but Buffer does not care about this.
+In they access layer, Item pointer will be parsed as per the index/heap tuple
+**/
 
-    struct ItemIdData {
-        PageOffset data_offset;;  // offset to tuple (from start of page)
-        TupleLength data_length;  // byte length of tuple
-    };
+struct PageHeaderData {
+    Offset freeSpaceStart;
+    Offset freeSpaceEnd;
+    Offset specialDataSpace;
+    /**
+     * Points to item (see item.h)
+     */
+    ItemIdData itemIds[];
+};
+using PageHeader = PageHeaderData*;
 
-    struct PageHeaderData {
-        PageOffset free_space_start;
-        PageOffset free_space_end;
-        PageOffset special_data_space;
-        ItemIdData itemIds[];
-    };
-    using PageHeader = PageHeaderData*;
+namespace page {
 
-
-    inline size_t sizeOfHeader() {
+    inline ObjectSize sizeOfHeader() {
         return sizeof(PageHeaderData);
+    }
+
+    inline ObjectSize sizeOfItemIdData() {
+        return sizeof(ItemIdData);
     }
 
     inline uint16_t numOfItems(Page page) {
         auto header = (PageHeader)page;
-        return (header->free_space_start - sizeOfHeader()) / sizeof(ItemIdData);
+        return (header->freeSpaceStart - sizeOfHeader()) / sizeof(ItemIdData);
     }
 
-    inline uint16_t getEmptySpace(Page page) {
+    inline ObjectSize getEmptySpace(Page page) {
         auto header = (PageHeader)page;
-        return header->free_space_end - header->free_space_start;
+        return header->freeSpaceEnd - header->freeSpaceStart;
     }
 
-    inline bool isAddable(Page page, size_t size_of_item) {
-        return getEmptySpace(page) + sizeof(ItemIdData) >= size_of_item;
+    inline bool isAddable(Page page, size_t sizeOfItem) {
+        return getEmptySpace(page) + sizeof(ItemIdData) >= sizeOfItem;
     }
 
-    Page initPage(size_t special_data_length);
-    void addItem(Page page, ItemSize size_of_item, Item item);
+    Page initPage(ObjectSize specialDataLength);
+    void addItem(Page page, ItemSize sizeOfItem, Item item);
+
 }
 
 #endif //PAGE_H
