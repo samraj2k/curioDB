@@ -39,6 +39,8 @@ add_executable(curiodb main.cpp
         headers/curio.h
         headers/access/heap.h
         src/access/heap.cpp
+        headers/storage/freespace.h
+        src/storage/freespace.cpp
 )
 
 target_link_libraries(curiodb gtest gtest_main spdlog::spdlog)

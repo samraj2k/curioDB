@@ -8,7 +8,8 @@
 #include "storage/block.h"
 
 namespace io {
-    Page loadPageFromDisk(BlockNumber blockNumber, std::uint64_t fileNumber);
-    void writePageToDisk(Page page, BlockNumber blockNumber, std::uint64_t fileNumber);
+    Page loadPageFromDisk(BlockNumber blockNumber, ID relationId);
+    void writePageToDisk(Page page, BlockNumber blockNumber, ID file);
+    BlockNumber getLastBlockForFile(ID file);
 }
 #endif //IO_H

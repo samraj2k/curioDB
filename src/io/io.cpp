@@ -11,11 +11,11 @@
 
 namespace io {
 
-    Page loadPageFromDisk(const BlockNumber blockNumber, const std::uint64_t fileNumber) {
+    Page loadPageFromDisk(const BlockNumber blockNumber, const ID relationId) {
         const uint64_t fileNumberSuffix = blockNumber / BLOCKS_PER_FILE;
         const uint64_t pageNumber = blockNumber % BLOCKS_PER_FILE;
         const uint64_t pageOffset = pageNumber * PAGE_SIZE;
-        const std::string fileName = std::to_string(fileNumber) + "_" + std::to_string(fileNumberSuffix);
+        const std::string fileName = std::to_string(relationId) + "_" + std::to_string(fileNumberSuffix);
 
         int fd = open(fileName.c_str(), O_RDONLY);
         if (fd == -1) {
@@ -36,11 +36,11 @@ namespace io {
         return page;
     }
 
-    void writePageToDisk(const Page page, const BlockNumber blockNumber, const std::uint64_t fileNumber) {
+    void writePageToDisk(const Page page, const BlockNumber blockNumber, const ID relationId) {
         const uint64_t fileNumberSuffix = blockNumber / BLOCKS_PER_FILE;
         const uint64_t pageNumber = blockNumber % BLOCKS_PER_FILE;
         const uint64_t pageOffset = pageNumber * PAGE_SIZE;
-        const std::string fileName = std::to_string(fileNumber) + "_" + std::to_string(fileNumberSuffix);
+        const std::string fileName = std::to_string(relationId) + "_" + std::to_string(fileNumberSuffix);
 
         int fd = open(fileName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1) {
@@ -66,6 +66,21 @@ namespace io {
         msync(mappedFile, PAGE_SIZE, MS_SYNC);
         munmap(mappedFile, PAGE_SIZE);
         close(fd);
+    }
+
+    BlockNumber getLastBlockForFile(ID relationId) {
+        // hardcoded for now
+        const uint64_t fileNumberSuffix = 0;
+        const std::string fileName = std::to_string(relationId) + "_" + std::to_string(fileNumberSuffix);
+        int fd = open(fileName.c_str(), O_RDONLY);
+        if (fd == -1) {
+            return -1; // Error opening file
+        }
+
+        off_t fileSize = lseek(fd, 0, SEEK_END);
+        close(fd);
+        return fileSize / PAGE_SIZE;
+        
     }
 
 }
